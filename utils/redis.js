@@ -2,6 +2,7 @@ import { createClient } from 'redis';
 import { promisify } from 'util';
 
 // Redis client class
+console.log(createClient);
 class RedisClient {
   /**
    * constructing a new class instance

@@ -1,5 +1,6 @@
 import { MongoClient } from 'mongodb';
 
+console.log(MongoClient);
 class DBClient {
   /**
    * constructing DBClint new instance
