@@ -1,24 +1,24 @@
+#!/usr/bin/env node
 import { createClient } from 'redis';
 import { promisify } from 'util';
 
-// Redis client class
 class RedisClient {
-/**
- * constructing a new class instance
- */
+  /**
+   * constructing a new class instance
+   */
   constructor () {
-    this.redisClient = createClient();
-    this.redisClient.on('error', (error) => {
+    this.newCient = createClient();
+    this.newCient.on('error', (error) => {
       console.log(error.message);
     });
   }
 
   /**
-  *  Check connection status of redis client
-  * @returns {boolean} - the connection status
-  */
+   *  Check connection status of redis client
+   * @returns {boolean} - the connection status
+   */
   isAlive () {
-    return this.redisClient.connected;
+    return this.newCient.connected;
   }
 
   /**
@@ -27,7 +27,7 @@ class RedisClient {
    * @returns {*} - value for concern key
    */
   async get (key) {
-    const asyncGet = promisify(this.redisClient.get).bind(this.redisClient);
+    const asyncGet = promisify(this.newCient.get).bind(this.newCient);
     const value = await asyncGet(key);
     return value;
   }
@@ -38,9 +38,8 @@ class RedisClient {
    * @param {*} value
    * @param {int} duration
    */
-
   async set (key, value, duration) {
-    const asyncSet = promisify(this.redisClient.set).bind(this.redisClient);
+    const asyncSet = promisify(this.newCient.set).bind(this.newCient);
     await asyncSet(key, value, 'EX', duration);
   }
 
@@ -49,7 +48,7 @@ class RedisClient {
    * @param {string} key
    */
   async del (key) {
-    const asyncDel = promisify(this.redisClient.del).bind(this.redisClient);
+    const asyncDel = promisify(this.newCient).bind(this.newCient);
     await asyncDel(key);
   }
 
@@ -57,7 +56,7 @@ class RedisClient {
    *  closes redis client connection
    */
   async close () {
-    this.redisClient.quit();
+    this.newCient.quit();
   }
 }
 
