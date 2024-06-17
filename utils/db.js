@@ -1,6 +1,6 @@
-import pkg from 'mongodb';
-const { MongoClient } = pkg;
+import { MongoClient } from 'mongodb';
 
+console.log(MongoClient);
 class DBClient {
   /**
    * constructing DBClint new instance
@@ -52,5 +52,6 @@ class DBClient {
   }
 }
 const dbClient = new DBClient();
-
 export default dbClient;
+
+

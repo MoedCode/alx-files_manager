@@ -2,12 +2,11 @@ import { createClient } from 'redis';
 import { promisify } from 'util';
 
 // Redis client class
-console.log(createClient);
 class RedisClient {
   /**
-   * constructing a new class instance
+   * Initializes new instance
    */
-  constructor () {
+  constructor() {
     this.redisClient = createClient();
     this.redisClient.on('error', (error) => {
       console.log(error.message);
@@ -16,40 +15,40 @@ class RedisClient {
 
   /**
    * Check connection status of redis client
-   * @returns {boolean} - the connection status
+   * @returns {boolean} - redis client connection status
    */
-  isAlive () {
+  isAlive() {
     return this.redisClient.connected;
   }
 
   /**
-   * look for a value for a given key
-   * @param {string} key - to look for
-   * @returns {*} - value for concern key
+   * Search for value associated with given key
+   * @param {string} key - key to search for in redis
+   * @returns {*} - value associated with key if found or null
    */
-  async get (key) {
+  async get(key) {
     const asyncGet = promisify(this.redisClient.get).bind(this.redisClient);
     const value = await asyncGet(key);
     return value;
   }
 
   /**
-   * set the given value for the given key
+   * Adds a value with given key to redis
    * @param {string} key
    * @param {*} value
-   * @param {int} duration
+   * @param {int} - ttl for given key
    */
 
-  async set (key, value, duration) {
+  async set(key, value, duration) {
     const asyncSet = promisify(this.redisClient.set).bind(this.redisClient);
     await asyncSet(key, value, 'EX', duration);
   }
 
   /**
-   * deletes an entry for a given key
-   * @param {string} ke
+   * Deletes a value associated with given key from redis
+   * @param {string} key
    */
-  async del (key) {
+  async del(key) {
     const asyncDel = promisify(this.redisClient.del).bind(this.redisClient);
     await asyncDel(key);
   }
@@ -57,7 +56,7 @@ class RedisClient {
   /**
    * Closes redis client connection
    */
-  async close () {
+  async close() {
     this.redisClient.quit();
   }
 }
