@@ -18,7 +18,7 @@ class RedisClient {
      * @returns {boolean} - the connection status
      */
   isAlive () {
-    return this.redisClient.connected;
+    return this.newCient.connected;
   }
 
   /**
@@ -27,7 +27,7 @@ class RedisClient {
      * @returns {*} - value for concern key
      */
   async get (key) {
-    const asyncGet = promisify(this.newCient.get).bind(this.redisClient);
+    const asyncGet = promisify(this.newCient.get).bind(this.newCient);
     const value = await asyncGet(key);
     return value;
   }
