@@ -31,7 +31,7 @@ class DBClient {
    * Checks if the MongoDB client is connected
    * @returns {boolean} True if the client is connected, otherwise false
    */
-  isAlive () {
+  isAlive() {
     return this.client && this.client.isConnected();
   }
 
