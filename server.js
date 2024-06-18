@@ -6,6 +6,6 @@ const PORT = process.env.PORT || 5000;
 
 app.use(routes);
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
