@@ -8,7 +8,7 @@ app.use(routes);
 
 
 
-server = app.listen(PORT, ()=>{
+const server = app.listen(PORT, ()=>{
     console.log(`Server running on port ${PORT}`);
 })
 
