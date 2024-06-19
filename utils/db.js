@@ -31,7 +31,7 @@ class DBClient {
    * Checks if the MongoDB client is connected
    * @returns {boolean} True if the client is connected, otherwise false
    */
-  isAlive() {
+  isAlive () {
     return this.client && this.client.isConnected();
   }
 
@@ -45,6 +45,7 @@ class DBClient {
     }
     return this.db.collection('users').countDocuments();
   }
+
   /**
  * get concern collection from database
  * @param {*} collectionName
@@ -53,8 +54,6 @@ class DBClient {
   getCollection (collectionName) {
     return this.db.collection(collectionName);
   }
-
-
 
   /**
    * Gets the number of documents in the "files" collection

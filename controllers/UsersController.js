@@ -12,7 +12,7 @@ class UsersController {
    * @param {Request} request - request object
    * @param {Response} response - response object
    */
-  static async postNew(request, response) {
+  static async postNew (request, response) {
     const { email, password } = request.body;
     if (email === undefined) {
       response.status(400).json({ error: 'Missing email' });
