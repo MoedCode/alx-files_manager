@@ -51,18 +51,19 @@ class DBClient {
  * @returns {import("mongodb").Collection} users collection
  */
   getCollection (collectionName) {
-    const collection = this.collection(collectionName);
-    return collection;
+    return this.db.collection(collectionName);
   }
+
+
 
   /**
    * Gets the number of documents in the "files" collection
    * @returns {Promise<number>} The number of documents in the "files" collection
    */
   async nbFiles () {
-    if (!this.db) {
-      return 0;
-    }
+    // if (!this.db) {
+    //   return 0;
+    // }
     return this.db.collection('files').countDocuments();
   }
 }
