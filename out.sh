@@ -1,27 +1,69 @@
 ==================== ./controllers/AppController.js ====================
-import dbClient from '../utils/db.js';  // Ensure correct paths
+import dbClient from '../utils/db.js'; // Ensure correct paths
 import redisClient from '../utils/redis.js';
 
 class AppController {
-    static getStatus(request, response) {
-        if (dbClient.isAlive() && redisClient.isAlive()) {
-            response.status(200).json({ redis: true, db: true });
-        } else {
-            response.status(500).json({ redis: false, db: false });
-        }
+  static getStatus (request, response) {
+    if (dbClient.isAlive() && redisClient.isAlive()) {
+      response.status(200).json({ redis: true, db: true });
+    } else {
+      response.status(500).json({ redis: false, db: false });
     }
+  }
 
-    static async getStats(request, response) {
-        const users = await dbClient.nbUsers();
-        const files = await dbClient.nbFiles();
-        response.status(200).json({ users, files });
-    }
+  static async getStats (request, response) {
+    const users = await dbClient.nbUsers();
+    const files = await dbClient.nbFiles();
+    response.status(200).json({ users, files });
+  }
 }
 
 export default AppController;
 
 ==================== ./controllers/AuthController.js ====================
-#!/usr/bin/env node
+import redisClient from '../utils/redis.js';
+import dbClient from '../utils/db.js';
+
+class AuthController {
+  static async getConnect (req, res) {
+    const auth = req.header('Authorization');
+    if (!auth) {
+      return res.status(401).send({ error: 'Unauthorized' });
+    }
+
+    const buff = Buffer.from(auth.slice(6), 'base64');
+    const creds = buff.toString('utf-8');
+    const [email, password] = creds.split(':');
+
+    const user = await dbClient.usersCollection.findOne({ email, password });
+
+    if (!user) {
+      return res.status(401).send({ error: 'Unauthorized' });
+    }
+
+    const token = await redisClient.createToken(user._id);
+
+    return res.status(200).send({ token });
+  }
+
+  static async getDisconnect (req, res) {
+    const token = req.header('X-Token');
+    if (!token) {
+      return res.status(401).send({ error: 'Unauthorized' });
+    }
+
+    const userId = await redisClient.getUserIdFromToken(token);
+    if (!userId) {
+      return res.status(401).send({ error: 'Unauthorized' });
+    }
+
+    await redisClient.delToken(token);
+
+    return res.status(204).send();
+  }
+}
+
+export default AuthController;
 
 ==================== ./controllers/FilesController.js ====================
 #!/usr/bin/env node
@@ -41,7 +83,7 @@ class UsersController {
    * @param {Request} request - request object
    * @param {Response} response - response object
    */
-  static async postNew(request, response) {
+  static async postNew (request, response) {
     const { email, password } = request.body;
     if (email === undefined) {
       response.status(400).json({ error: 'Missing email' });
@@ -56,8 +98,28 @@ class UsersController {
       response.status(201).json({ id: userId, email });
     }
   }
-}
 
+  static async getMe (req, res) {
+    const token = req.header('X-Token');
+    if (!token) {
+      return res.status(401).send({ error: 'Unauthorized' });
+    }
+
+    const userId = await redisClient.getUserIdFromToken(token);
+    if (!userId) {
+      return res.status(401).send({ error: 'Unauthorized' });
+    }
+
+    const user = await dbClient.usersCollection.findOne({ _id: ObjectId(userId) });
+
+    if (!user) {
+      return res.status(401).send({ error: 'Unauthorized' });
+    }
+
+    return res.status(200).send({ id: user._id, email: user.email });
+  }
+}
+console.log(new UsersCollection());
 export default UsersController;
 
 ==================== ./main.js ====================
@@ -104,38 +166,42 @@ const router = Router();
 router.use(statusRoutes);
 router.use(usersRoutes);
 
-export default router
+export default router;
+
 ==================== ./routes/status.js ====================
 import { Router } from 'express';
 import AppController from '../controllers/AppController.js';
 
-
 const statusRouter = Router();
-
 
 statusRouter.get('/status', AppController.getStatus);
 statusRouter.get('/stats', AppController.getStats);
 
 export default statusRouter;
+
 ==================== ./routes/usersRoutes.js ====================
 import { Router } from 'express';
 import UsersController from '../controllers/UsersController.js';
-
+import AuthController from '../controllers/AuthController.js';
 
 const usersRoutes = Router();
 
-
 usersRoutes.post('/users', UsersController.postNew);
+usersRoutes.get('/users/me', UsersController.getMe);
 
+usersRoutes.get('/connect', AuthController.getConnect);
+usersRoutes.get('/disconnect', AuthController.getDisconnect);
 
 export default usersRoutes;
 
 ==================== ./server.js ====================
 import express from 'express';
 import routes from './routes/index.js';
+import bodyParser from 'body-parser'; // Corrected: Imported body-parser
 // Express app
 const app = express();
 const PORT = process.env.PORT || 5000;
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(routes);
 
@@ -215,7 +281,7 @@ class DBClient {
    * Checks if the MongoDB client is connected
    * @returns {boolean} True if the client is connected, otherwise false
    */
-  isAlive() {
+  isAlive () {
     return this.client && this.client.isConnected();
   }
 
@@ -229,6 +295,7 @@ class DBClient {
     }
     return this.db.collection('users').countDocuments();
   }
+
   /**
  * get concern collection from database
  * @param {*} collectionName
@@ -238,16 +305,14 @@ class DBClient {
     return this.db.collection(collectionName);
   }
 
-
-
   /**
    * Gets the number of documents in the "files" collection
    * @returns {Promise<number>} The number of documents in the "files" collection
    */
   async nbFiles () {
-    if (!this.db) {
-      return 0;
-    }
+    // if (!this.db) {
+    //   return 0;
+    // }
     return this.db.collection('files').countDocuments();
   }
 }
@@ -256,6 +321,7 @@ const dbClient = new DBClient();
 
 export default dbClient;
 if (process.argv[2]) console.log(dbClient);
+
 ==================== ./utils/redis.js ====================
 import { createClient } from 'redis';
 import { promisify } from 'util';
@@ -328,13 +394,14 @@ export default redisClient;
 import dbClient from './db.js';
 import sha1 from 'sha1';
 
-class Password {
+// Utility class for users database operations
+class UsersCollection {
   /**
    * Encrypts a password using sha1
    * @param {string} password - password to encrypt
-   * @returns - encrypted password
+   * @returns {string} - encrypted password
    */
-  static encryptPassword(password) {
+  static encryptPassword (password) {
     return sha1(password);
   }
 
@@ -344,23 +411,19 @@ class Password {
    * @param {string} hashedPassword - hashed password to compare against
    * @returns {boolean} - true if password is valid, false otherwise
    */
-  static isPasswordValid(password, hashedPassword) {
+  static isPasswordValid (password, hashedPassword) {
     return sha1(password) === hashedPassword;
   }
-}
 
-
-// Utility class for users database operations
-class UsersCollection {
   /**
    * Creates new user document in database
    * @param {string} email - user email
    * @param {string} password - user password
    * @returns {string | null} - user id
    */
-  static async createUser(email, password) {
+  static async createUser (email, password) {
     const collection = dbClient.getCollection('users');
-    const newUser = { email, password: Password.encryptPassword(password) };
+    const newUser = { email, password: UsersCollection.encryptPassword(password) };
     const commandResult = await collection.insertOne(newUser);
     return commandResult.insertedId;
   }
@@ -370,7 +433,7 @@ class UsersCollection {
    * @param {object} query - query parameters
    * @returns { import('mongodb').Document} - user document
    */
-  static async getUser(query) {
+  static async getUser (query) {
     const collection = dbClient.getCollection('users');
     const user = await collection.findOne(query);
     return user;

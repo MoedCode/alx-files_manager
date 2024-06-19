@@ -48,5 +48,5 @@ class UsersController {
     return res.status(200).send({ id: user._id, email: user.email });
   }
 }
-
+console.log(new UsersCollection());
 export default UsersController;
