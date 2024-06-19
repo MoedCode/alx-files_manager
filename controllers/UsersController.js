@@ -1,33 +1,32 @@
-import redisClient from '../utils/redis.js';
-import dbClient from '../utils/db.js';
+import Queue from 'bull';
+import UsersCollection from '../utils/users.js';
+
+// User welcome email queue
+const userQueue = Queue('send welcome email');
 
 class UsersController {
-  static async postNew(req, res) {
-    const { email, password } = req.body;
-
-    if (!email) {
-      return res.status(400).send({ error: 'Missing email' });
+  /**
+   * Controller for endpoint POST /users for creating new users
+   * @typedef {import("express").Request} Request
+   * @typedef {import("express").Response} Response
+   * @param {Request} request - request object
+   * @param {Response} response - response object
+   */
+  static async postNew(request, response) {
+    const { email, password } = request.body;
+    if (email === undefined) {
+      response.status(400).json({ error: 'Missing email' });
+    } else if (password === undefined) {
+      response.status(400).json({ error: 'Missing password' });
+    } else if (await UsersCollection.getUser({ email })) {
+      response.status(400).json({ error: 'Already exist' });
+    } else {
+      // Create new user
+      const userId = await UsersCollection.createUser(email, password);
+      userQueue.add({ userId });
+      response.status(201).json({ id: userId, email });
     }
-
-    if (!password) {
-      return res.status(400).send({ error: 'Missing password' });
-    }
-
-    const userExists = await dbClient.usersCollection.findOne({ email });
-
-    if (userExists) {
-      return res.status(400).send({ error: 'Already exist' });
-    }
-
-
-    const user = await dbClient.usersCollection.insertOne({ email, password: sha1(password) });
-
-    return res.status(201).send({ id: user.insertedId, email });
   }
 }
-export default UsersController;
-// if (require.main === module){
-//     const usersControllers = new UsersController();
-//     console.log(usersControllers);
 
-// }
+export default UsersController;
