@@ -45,6 +45,15 @@ class DBClient {
     }
     return this.db.collection('users').countDocuments();
   }
+  /**
+ * get concern collection from database
+ * @param {*} collectionName
+ * @returns {import("mongodb").Collection} users collection
+ */
+  getCollection (collectionName) {
+    const collection = this.collection(collectionName);
+    return collection;
+  }
 
   /**
    * Gets the number of documents in the "files" collection
@@ -61,3 +70,4 @@ class DBClient {
 const dbClient = new DBClient();
 
 export default dbClient;
+if (process.argv[2]) console.log(dbClient);

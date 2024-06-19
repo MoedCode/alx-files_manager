@@ -26,8 +26,8 @@ class UsersController {
   }
 }
 export default UsersController;
-if (require.main === module){
-    const usersControllers = new UsersController();
-    console.log(usersControllers);
+// if (require.main === module){
+//     const usersControllers = new UsersController();
+//     console.log(usersControllers);
 
-}
+// }
